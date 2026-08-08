@@ -1,1 +1,390 @@
-Test
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Headless Builds — printing, homelab, and the code in between</title>
+<meta name="description" content="3D printing, homelab, hardware, and the code that ties them together. Files from every build, free.">
+<meta property="og:title" content="Headless Builds">
+<meta property="og:description" content="3D printing, homelab, hardware, and the code that ties them together. Files from every build, free.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://headlessbuilds.app/">
+<link rel="canonical" href="https://headlessbuilds.app/">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
+<link rel="icon" type="image/png" sizes="96x96" href="/favicon-96.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="manifest" href="/site.webmanifest">
+<meta name="theme-color" content="#0E0E0E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;500;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --black:#0E0E0E;
+  --paper:#EDEBE6;
+  --white:#FAFAFA;
+  --grey:#8E8E8E;
+  --grey-l:#7A7A75;
+  --torch:#FF4D00;
+  --rule:#2A2A2A;
+  --rule-l:#CFCCC4;
+  --display:"Archivo Black",system-ui,sans-serif;
+  --body:"Inter",system-ui,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,monospace;
+  --gut:clamp(20px,5vw,80px);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{
+  background:var(--black);color:var(--white);
+  font-family:var(--body);font-size:17px;line-height:1.6;
+  -webkit-font-smoothing:antialiased;overflow-x:hidden;
+}
+a{color:inherit;text-decoration:none}
+:focus-visible{outline:2px solid var(--torch);outline-offset:3px}
+
+/* ---------- shared ---------- */
+.wrap{max-width:1240px;margin:0 auto;padding-inline:var(--gut)}
+.eyebrow{
+  font-family:var(--mono);font-size:12px;font-weight:700;
+  letter-spacing:.22em;text-transform:uppercase;color:var(--grey);
+}
+.band{padding-block:clamp(72px,11vw,140px)}
+.band--paper{background:var(--paper);color:var(--black)}
+.band--ink{background:#121212}
+.band--paper .eyebrow{color:var(--grey-l)}
+.h2{
+  font-family:var(--display);
+  font-size:clamp(30px,5vw,52px);line-height:1.02;
+  letter-spacing:.01em;text-transform:uppercase;margin-top:18px;
+}
+.lede{max-width:52ch;margin-top:22px;color:var(--grey);font-size:clamp(16px,1.6vw,19px)}
+.band--paper .lede{color:#54524D}
+
+/* ---------- nav ---------- */
+.nav{
+  position:fixed;inset:0 0 auto 0;z-index:50;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:18px var(--gut);
+  background:rgba(14,14,14,.78);backdrop-filter:blur(12px);
+  border-bottom:1px solid transparent;transition:border-color .3s;
+}
+.nav.is-stuck{border-bottom-color:var(--rule)}
+.mono-badge{
+  display:grid;place-items:center;width:38px;height:38px;border-radius:8px;
+  background:var(--white);color:var(--black);
+  font-family:var(--display);font-size:16px;letter-spacing:.04em;
+}
+.nav-links{display:flex;gap:clamp(16px,3vw,34px);align-items:center}
+.nav-links a{font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--grey);transition:color .2s}
+.nav-links a:hover{color:var(--white)}
+.nav-links .sub{color:var(--torch)}
+@media(max-width:560px){.nav-links a:not(.sub){display:none}}
+
+/* ---------- hero ---------- */
+.hero{
+  min-height:100svh;display:flex;flex-direction:column;justify-content:center;
+  padding-block:120px 60px;position:relative;
+}
+.bed{
+  position:absolute;inset:0;pointer-events:none;
+  background-image:linear-gradient(var(--rule) 1px,transparent 1px),linear-gradient(90deg,var(--rule) 1px,transparent 1px);
+  background-size:64px 64px;
+  mask-image:radial-gradient(ellipse 80% 60% at 50% 45%,#000 20%,transparent 78%);
+  opacity:.5;
+}
+.hero .wrap{position:relative}
+
+.mark{position:relative;display:inline-block}
+.mark-line{
+  display:block;position:relative;
+  font-family:var(--display);text-transform:uppercase;
+  line-height:.88;letter-spacing:.005em;
+  /* layer striations, as if printed */
+  background-image:repeating-linear-gradient(to bottom,#FAFAFA 0 5px,#CDCBC5 5px 7px);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+}
+.mark-line.l1{font-size:clamp(52px,13.2vw,168px)}
+.mark-line.l2{font-size:clamp(70px,17.6vw,224px);letter-spacing:.02em}
+.shutter{
+  position:absolute;left:-2%;right:-2%;top:0;height:100%;
+  background:var(--black);
+}
+.shutter::after{
+  content:"";position:absolute;left:0;right:0;bottom:0;height:2px;
+  background:var(--torch);box-shadow:0 0 18px 2px rgba(255,77,0,.7);
+}
+.hero-sub{margin-top:34px;max-width:46ch;font-size:clamp(17px,2vw,21px);color:#B9B7B1}
+.hero-sub strong{color:var(--white);font-weight:500}
+.cta-row{display:flex;flex-wrap:wrap;gap:14px;margin-top:38px}
+.btn{
+  display:inline-flex;align-items:center;gap:10px;
+  padding:15px 26px;border-radius:10px;
+  font-family:var(--mono);font-size:13px;font-weight:700;
+  letter-spacing:.14em;text-transform:uppercase;
+  border:1px solid var(--rule);transition:transform .18s,background .18s,color .18s,border-color .18s;
+}
+.btn:hover{transform:translateY(-2px)}
+.btn--fill{background:var(--torch);color:var(--black);border-color:var(--torch)}
+.btn--fill:hover{background:#ff6321;border-color:#ff6321}
+.btn--ghost{color:var(--white)}
+.btn--ghost:hover{border-color:var(--white)}
+
+/* page-load orchestration */
+.reveal{opacity:0;transform:translateY(14px)}
+.is-ready .reveal{opacity:1;transform:none;transition:opacity .7s ease,transform .7s ease}
+.is-ready .reveal.d1{transition-delay:1.15s}
+.is-ready .reveal.d2{transition-delay:1.3s}
+.is-ready .reveal.d3{transition-delay:1.45s}
+.is-ready .shutter{height:0;transition:height 1.05s cubic-bezier(.22,.7,.24,1)}
+.is-ready .shutter.s2{transition-delay:.16s}
+.is-ready .shutter::after{opacity:0;transition:opacity .3s .95s}
+
+/* ---------- pillars ---------- */
+.pillars{border-block:1px solid var(--rule);background:#121212}
+.pillars-grid{display:grid;grid-template-columns:repeat(4,1fr)}
+.pillar{padding:38px 30px;border-left:1px solid var(--rule)}
+.pillar:first-child{border-left:0}
+.pillar h3{font-family:var(--display);font-size:19px;letter-spacing:.05em;text-transform:uppercase}
+.pillar p{margin-top:10px;font-size:14.5px;line-height:1.55;color:var(--grey)}
+@media(max-width:900px){
+  .pillars-grid{grid-template-columns:1fr 1fr}
+  .pillar:nth-child(3){border-left:0}
+  .pillar:nth-child(n+3){border-top:1px solid var(--rule)}
+}
+@media(max-width:520px){
+  .pillars-grid{grid-template-columns:1fr}
+  .pillar{border-left:0}
+  .pillar+.pillar{border-top:1px solid var(--rule)}
+}
+
+/* ---------- about ---------- */
+.about-grid{display:grid;grid-template-columns:1fr 1fr;gap:clamp(32px,6vw,90px);align-items:start}
+.about-body p+p{margin-top:20px}
+.about-body p{font-size:clamp(17px,1.8vw,20px);line-height:1.65}
+.spec{border-top:1px solid var(--rule-l);margin-top:0}
+.spec-row{display:flex;justify-content:space-between;gap:20px;padding:16px 0;border-bottom:1px solid var(--rule-l);font-family:var(--mono);font-size:13px}
+.spec-row dt{color:var(--grey-l);letter-spacing:.08em;text-transform:uppercase}
+.spec-row dd{font-weight:700;text-align:right}
+@media(max-width:820px){.about-grid{grid-template-columns:1fr}}
+
+/* ---------- videos ---------- */
+.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:22px;margin-top:44px}
+.card{border:1px solid var(--rule);border-radius:12px;overflow:hidden;background:#131313;transition:border-color .2s,transform .2s}
+.card:hover{border-color:#3a3a3a;transform:translateY(-3px)}
+.card-art{aspect-ratio:16/9;padding:20px;display:flex;flex-direction:column;justify-content:center;position:relative}
+.card-art.dark{background:var(--black)}
+.card-art.light{background:var(--paper)}
+.card-kick{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--grey)}
+.card-art.light .card-kick{color:var(--grey-l)}
+.card-title{font-family:var(--display);font-size:clamp(19px,2.4vw,27px);line-height:1.04;text-transform:uppercase;margin-top:12px}
+.card-art.light .card-title{color:var(--black)}
+.card-title em{font-style:normal;color:var(--torch);display:block}
+.hb{position:absolute;right:16px;bottom:16px;width:30px;height:30px;border-radius:6px;display:grid;place-items:center;font-family:var(--display);font-size:12px}
+.card-art.dark .hb{background:var(--white);color:var(--black)}
+.card-art.light .hb{background:var(--black);color:var(--paper)}
+.card-meta{padding:16px 20px 20px;font-family:var(--mono);font-size:11.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--grey)}
+@media(max-width:900px){.cards{grid-template-columns:1fr;max-width:480px}}
+
+/* ---------- files ---------- */
+.files{margin-top:44px;border-top:1px solid var(--rule)}
+.file{
+  display:grid;grid-template-columns:1fr auto auto;gap:24px;align-items:center;
+  padding:22px 4px;border-bottom:1px solid var(--rule);transition:padding-left .2s;
+}
+.file:hover{padding-left:14px}
+.file-name{font-family:var(--mono);font-size:15px;font-weight:700}
+.file-note{color:var(--grey);font-size:14px}
+.file-tag{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--torch);white-space:nowrap}
+@media(max-width:700px){
+  .file{grid-template-columns:1fr;gap:6px}
+  .file-tag{justify-self:start}
+}
+
+/* ---------- support ---------- */
+.support{border-top:1px solid var(--rule)}
+.support-inner{display:flex;flex-wrap:wrap;gap:36px;justify-content:space-between;align-items:flex-end}
+.support .lede{margin-bottom:0}
+.support .cta-row{margin-top:0}
+
+/* ---------- footer ---------- */
+.foot{border-top:1px solid var(--rule);padding-block:56px 44px}
+.foot-top{display:flex;flex-wrap:wrap;gap:28px;justify-content:space-between;align-items:flex-end}
+.foot-mark{font-family:var(--display);font-size:clamp(30px,6vw,58px);text-transform:uppercase;line-height:.95;letter-spacing:.01em}
+.foot-links{display:flex;flex-wrap:wrap;gap:22px}
+.foot-links a{font-family:var(--mono);font-size:12.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--grey);transition:color .2s}
+.foot-links a:hover{color:var(--torch)}
+.foot-base{margin-top:40px;padding-top:22px;border-top:1px solid var(--rule);display:flex;flex-wrap:wrap;gap:14px;justify-content:space-between;font-family:var(--mono);font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;color:#5E5E5E}
+
+@media(prefers-reduced-motion:reduce){
+  *{animation:none!important;transition:none!important}
+  .shutter{display:none}
+  .reveal{opacity:1;transform:none}
+  html{scroll-behavior:auto}
+}
+</style>
+</head>
+<body>
+
+<nav class="nav" id="nav">
+  <a href="#top" class="mono-badge" aria-label="Headless Builds, back to top">HB</a>
+  <div class="nav-links">
+    <a href="#about">About</a>
+    <a href="#videos">Videos</a>
+    <a href="#files">Files</a>
+    <a href="https://www.youtube.com/@HeadlessBuilds" class="sub" target="_blank" rel="noopener">Subscribe</a>
+  </div>
+</nav>
+
+<header class="hero" id="top">
+  <div class="bed" aria-hidden="true"></div>
+  <div class="wrap">
+    <h1 class="mark">
+      <span class="mark-line l1">Headless<span class="shutter" aria-hidden="true"></span></span>
+      <span class="mark-line l2">Builds<span class="shutter s2" aria-hidden="true"></span></span>
+    </h1>
+    <p class="hero-sub reveal d1">Whatever got built that week, start to finish. <strong>3D printing, homelab, hardware, and the code that ties them together.</strong></p>
+    <div class="cta-row reveal d2">
+      <a class="btn btn--fill" href="https://www.youtube.com/@HeadlessBuilds" target="_blank" rel="noopener">Watch on YouTube</a>
+      <a class="btn btn--ghost" href="#files">Get the files</a>
+    </div>
+  </div>
+</header>
+
+<section class="pillars" aria-label="What the channel covers">
+  <div class="pillars-grid">
+    <div class="pillar"><h3>Build</h3><p>Printers, parts, and prints that fix a problem already sitting in the room.</p></div>
+    <div class="pillar"><h3>Code</h3><p>Small tools, shipped end to end. The ones worth keeping get a video.</p></div>
+    <div class="pillar"><h3>Grind</h3><p>Algorithms and system design, worked through in public rather than after the fact.</p></div>
+    <div class="pillar"><h3>Systems</h3><p>Homelab, containers, and infrastructure left to run unattended.</p></div>
+  </div>
+</section>
+
+<section class="band band--paper" id="about">
+  <div class="wrap about-grid">
+    <div>
+      <p class="eyebrow">What this is</p>
+      <h2 class="h2">Every video starts with a problem on the desk</h2>
+    </div>
+    <div class="about-body">
+      <p>No intro music, no studio, no script. Just the work that was happening anyway, recorded as it went.</p>
+      <p>Some of it is physical — a bracket that ends a two-year annoyance, a printer that needs its bed relevelled again. Some of it is software — a utility that took an evening and saved a hundred more.</p>
+      <p>Nothing here is a tutorial. It's the build, the parts that failed, and the file at the end so you can skip straight to the version that worked.</p>
+      <dl class="spec">
+        <div class="spec-row"><dt>Schedule</dt><dd>One video, Fridays</dd></div>
+        <div class="spec-row"><dt>Covers</dt><dd>Hardware and software</dd></div>
+        <div class="spec-row"><dt>Files</dt><dd>Free, every build</dd></div>
+      </dl>
+    </div>
+  </div>
+</section>
+
+<section class="band" id="videos">
+  <div class="wrap">
+    <p class="eyebrow">Recent</p>
+    <h2 class="h2">Videos</h2>
+    <p class="lede">Anything on a screen runs dark. Anything on the bench runs light.</p>
+    <div class="cards">
+      <article class="card">
+        <div class="card-art light">
+          <span class="card-kick">Printed it</span>
+          <h3 class="card-title">Five prints<em>that stuck</em></h3>
+          <span class="hb">HB</span>
+        </div>
+        <p class="card-meta">14 min · Build</p>
+      </article>
+      <article class="card">
+        <div class="card-art dark">
+          <span class="card-kick">Homelab</span>
+          <h3 class="card-title">Two VMs,<em>zero GUI</em></h3>
+          <span class="hb">HB</span>
+        </div>
+        <p class="card-meta">11 min · Systems</p>
+      </article>
+      <article class="card">
+        <div class="card-art light">
+          <span class="card-kick">Designed it</span>
+          <h3 class="card-title">A mount<em>that works</em></h3>
+          <span class="hb">HB</span>
+        </div>
+        <p class="card-meta">9 min · Build</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<section class="band band--ink" id="files">
+  <div class="wrap">
+    <p class="eyebrow">Downloads</p>
+    <h2 class="h2">Files from every build</h2>
+    <p class="lede">Print files, configs, and source. No email, no sign-up — the link is under the video and here.</p>
+    <div class="files">
+      <a class="file" href="#">
+        <span class="file-name">bench-cable-comb.stl</span>
+        <span class="file-note">Six-slot comb, clips to a 20mm desk lip</span>
+        <span class="file-tag">Print</span>
+      </a>
+      <a class="file" href="#">
+        <span class="file-name">printer-tool-caddy.stl</span>
+        <span class="file-note">Holds the hex keys that came in the box</span>
+        <span class="file-tag">Print</span>
+      </a>
+      <a class="file" href="#">
+        <span class="file-name">homelab-compose.yml</span>
+        <span class="file-note">The stack running on two headless VMs</span>
+        <span class="file-tag">Config</span>
+      </a>
+    </div>
+    <div class="cta-row">
+      <a class="btn btn--ghost" href="https://github.com/headlessbuilds" target="_blank" rel="noopener">Browse the repos</a>
+    </div>
+  </div>
+</section>
+
+<section class="band support" id="support">
+  <div class="wrap support-inner">
+    <div>
+      <p class="eyebrow">Support</p>
+      <h2 class="h2">The files stay free</h2>
+      <p class="lede">Patreon covers filament, boards, and the parts that get printed three times before they fit. Members see builds early and get the source before it's cleaned up.</p>
+    </div>
+    <div class="cta-row">
+      <a class="btn btn--fill" href="https://patreon.com/HeadlessBuilds" target="_blank" rel="noopener">Join on Patreon</a>
+    </div>
+  </div>
+</section>
+
+<footer class="foot">
+  <div class="wrap">
+    <div class="foot-top">
+      <p class="foot-mark">Headless<br>Builds</p>
+      <div class="foot-links">
+        <a href="https://www.youtube.com/@HeadlessBuilds" target="_blank" rel="noopener">YouTube</a>
+        <a href="https://www.instagram.com/headlessbuilds/" target="_blank" rel="noopener">Instagram</a>
+        <a href="https://x.com/headlessbuilds" target="_blank" rel="noopener">X</a>
+        <a href="https://github.com/headlessbuilds" target="_blank" rel="noopener">GitHub</a>
+        <a href="https://www.threads.com/@headlessbuilds" target="_blank" rel="noopener">Threads</a>
+        <a href="https://www.facebook.com/profile.php?id=61593050640372" target="_blank" rel="noopener">Facebook</a>
+        <a href="https://patreon.com/HeadlessBuilds" target="_blank" rel="noopener">Patreon</a>
+        <a href="mailto:headlessbuilds@gmail.com">Email</a>
+      </div>
+    </div>
+    <div class="foot-base">
+      <span>One video, Fridays.</span>
+      <span>headlessbuilds.app</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+requestAnimationFrame(function(){
+  requestAnimationFrame(function(){ document.body.classList.add('is-ready'); });
+});
+var nav = document.getElementById('nav');
+addEventListener('scroll', function(){
+  nav.classList.toggle('is-stuck', scrollY > 24);
+}, {passive:true});
+</script>
+</body>
+</html>
